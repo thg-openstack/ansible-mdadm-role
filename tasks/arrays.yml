@@ -118,15 +118,22 @@
     dest: "{{ mdadm_conf }}"
     force: no
 
+- name: convert defined arrays into regexp search required for mdadm
+  ansible.builtin.set_fact:
+    mdadm_required_arrays_names: "{{ mdadm_arrays | selectattr('state', 'eq', 'present') | map(attribute='name') | default([]) | join('|') }}"
+
 # Updating mdadm.conf in order to persist between reboots
 - name: arrays | Updating {{ mdadm_conf }}
   lineinfile:
     dest: "{{ mdadm_conf }}"
-    regexp: "^{{ item }}"
+    regexp: "^ARRAY\\s{{ item.split()[1] }}\\s"
     line: "{{ item }}"
     state: "present"
-  with_items: '{{ array_details.stdout_lines }}'
-  when: array_created.changed
+  with_items: "{{ array_details.stdout_lines }}"
+  when:
+    - array_created.changed
+    - 'item is search(mdadm_required_arrays_names)'
+    - mdadm_required_arrays_names | default([]) | length > 0
 
 # Updating mdadm.conf in order to not persist between reboots
 - name: arrays | Updating {{ mdadm_conf }}
