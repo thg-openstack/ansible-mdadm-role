@@ -12,9 +12,7 @@
 
 - name: Main | Include wipe_disks tasks
   ansible.builtin.include_tasks: wipe_disks.yml
-  when: >
-    mdadm_force_wipe is defined and
-    mdadm_force_wipe
+  when: mdadm_force_wipe | default(false) | bool
 
 - name: Main | Include arrays tasks
   ansible.builtin.include_tasks: arrays.yml
