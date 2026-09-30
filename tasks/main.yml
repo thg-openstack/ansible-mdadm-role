@@ -9,7 +9,5 @@
   when: ansible_facts.os_family == "RedHat"
 
 - include_tasks: wipe_disks.yml
-  when: >
-        mdadm_force_wipe is defined and
-        mdadm_force_wipe
+  when: mdadm_force_wipe | default(false) | bool
 - include_tasks: arrays.yml
