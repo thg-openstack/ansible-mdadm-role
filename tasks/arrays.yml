@@ -137,15 +137,22 @@
     force: false
     mode: "0644"
 
+- name: Arrays | Build regexp of required array names
+  ansible.builtin.set_fact:
+    mdadm_required_arrays_names: "{{ mdadm_arrays | selectattr('state', 'eq', 'present') | map(attribute='name') | default([]) | join('|') }}"
+
 # Updating mdadm.conf in order to persist between reboots
 - name: Arrays | Updating mdadm conf for persistence
   ansible.builtin.lineinfile:
     dest: "{{ mdadm_conf }}"
-    regexp: "^{{ item }}"
+    regexp: "^ARRAY\\s{{ item.split()[1] }}\\s"
     line: "{{ item }}"
     state: "present"
-  with_items: '{{ array_details.stdout_lines }}'
-  when: array_created.changed
+  with_items: "{{ array_details.stdout_lines }}"
+  when:
+    - array_created.changed
+    - 'item is search(mdadm_required_arrays_names)'
+    - mdadm_required_arrays_names | default([]) | length > 0
 
 # Rebuild initramfs AFTER mdadm.conf is written so the array definitions
 # are embedded in the initramfs and the kernel can identify arrays by name
